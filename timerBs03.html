@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Timers</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+
+    <div class="container mt-3">
+        <button type="button" class="btn btn-primary" onclick="CreateNewTimer()">Create Timer</button>
+    </div>
+
+    <script>
+        window.onload = function() {
+            CreateNewTimer();
+        }
+
+        function CreateNumericInput(max) {
+            let numericInput = document.createElement("input");
+            numericInput.classList.add("text-sm-center");
+            numericInput.type = "number";
+            numericInput.min = "0";
+            numericInput.max = max;
+            numericInput.maxLength = "2";
+            numericInput.value = "0";
+            return numericInput;
+        }
+
+        let id = 0;
+        let activeTimers = [];
+        let removeTimerIndexs = [];
+        setInterval(DoActiveTimers, 1000);
+
+        function CreateNewTimer() {
+            let timerContainer = document.createElement("div");
+            timerContainer.classList.add("container", "mt-3");
+            document.body.appendChild(timerContainer);
+            let timerDiv = document.createElement("div");
+            timerDiv.id = "timer" + String(id++).padStart(4, '0');
+            timerDiv.classList.add("p-3","d-inline-flex","bg-secondary")
+            let lbl = document.createElement("span");
+            lbl.classList.add("input-group-text");
+            lbl.textContent = "HH:MM:SS";
+            timerDiv.appendChild(lbl);
+
+            let hourInput = CreateNumericInput("5");
+            timerDiv.appendChild(hourInput);
+            let minuteInput = CreateNumericInput("59");
+            timerDiv.appendChild(minuteInput);
+            let secondInput = CreateNumericInput("59");
+            timerDiv.appendChild(secondInput);
+
+            let startBtn = document.createElement("input");
+            startBtn.classList.add("btn", "btn-light");
+            startBtn.type = "submit";
+            startBtn.value = "Start";
+            startBtn.addEventListener('click', StartTimer);
+            timerDiv.appendChild(startBtn);
+
+            let stopBtn = document.createElement("input");
+            stopBtn.classList.add("btn", "btn-light");
+            stopBtn.type = "submit";
+            stopBtn.value = "Stop";
+            stopBtn.addEventListener('click', StopTimer);
+            timerDiv.appendChild(stopBtn);
+
+            timerContainer.appendChild(timerDiv);
+            hourInput.select();
+        }
+
+        function StartTimer(e) {
+            let timerContainer = e.target.parentNode;
+
+            let hours = parseInt(timerContainer.children[1].value);
+            let mins = parseInt(timerContainer.children[2].value);
+            let secs = parseInt(timerContainer.children[3].value);
+            // console.log(hours, mins, secs);
+            if (hours > 0 || mins > 0 || secs > 0) {
+                const amountOfTime = (hours * 60 * 60) + (mins * 60) + secs;
+                const timer = {container: timerContainer, interval: amountOfTime};
+
+                // check to see if this timer is already in active list
+                let alreadyActive = false;
+                activeTimers.find((obj, index) => {
+                    alreadyActive = obj.container.id === timerContainer.id;
+                });
+                if (!alreadyActive) {
+                    // not already active, add to active list
+                    activeTimers.push(timer);
+                    // change color to orig if it is a restart
+                    if (timerContainer.classList.contains('bg-primary')) {
+                        timerContainer.classList.remove('bg-primary');
+                        timerContainer.classList.add('bg-secondary');
+                    }
+                }
+            }
+        }
+
+        function StopTimer(e) {
+            // add this timer container to inactive timers
+            let removalId = e.target.parentNode.id;
+            console.log('remove div id', removalId);
+            for (let i = 0; i < activeTimers.length; i++) {
+                let thisTimer = activeTimers[i];
+                console.log('container', thisTimer.container.id);
+                if (thisTimer.container.id === removalId) {
+                    removeTimerIndexs.push(i);
+                    //console.log('removeTimerIndexes', removeTimerIndexs);
+                }
+            }
+        }
+
+        function DoActiveTimers() {
+            if (activeTimers.length == 0) {
+                return;
+            }
+            // update all active timers
+            activeTimers.forEach((activeTimer, index) => {
+                DoActiveTimer(activeTimer, index);
+            });
+            RemoveInactiveTimers();
+        }
+
+        function DoActiveTimer(timer, index) {
+            timer.interval = timer.interval - 1;
+            if (timer.interval >= 0) {
+                let secs = timer.interval % 60;
+                let mins = ((timer.interval - secs) % (60 * 60)) / 60;
+                let hours = (timer.interval - secs - (mins * 60)) / (60 * 60);
+                timer.container.children[3].value = secs;
+                timer.container.children[2].value = mins;
+                timer.container.children[1].value = hours;
+            }
+            else {
+                PlaySound();
+                ChangeColor(index);
+                removeTimerIndexs.push(index);
+            }
+        }
+
+        function PlaySound() {
+            let audio = new Audio('test.wav');
+            audio.loop = false;
+            audio.play();
+        }
+
+        function RemoveInactiveTimers() {
+            removeTimerIndexs.forEach((atIndex, index) => {
+                console.log('removing timer', activeTimers[atIndex]);
+                if (atIndex < activeTimers.length) {
+                    activeTimers.splice(atIndex, 1);
+                }
+            });
+            removeTimerIndexs = [];
+        }
+
+        function ChangeColor(timerIndex) {
+            console.log('change color for', activeTimers[timerIndex].container.id);
+            activeTimers[timerIndex].container.classList.remove('bg-secondary');
+            activeTimers[timerIndex].container.classList.add('bg-primary');
+        }
+    </script>
+
+</body>
+</html>
